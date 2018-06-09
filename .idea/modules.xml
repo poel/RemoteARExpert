@@ -2,9 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/WebRTC.iml" filepath="$PROJECT_DIR$/WebRTC.iml" />
+      <module fileurl="file://$PROJECT_DIR$/WebRTC-Android-AppRTC.iml" filepath="$PROJECT_DIR$/WebRTC-Android-AppRTC.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/libjinglepeerconnection/libjinglepeerconnection.iml" filepath="$PROJECT_DIR$/libjinglepeerconnection/libjinglepeerconnection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/third_party/vecmath/vecmath.iml" filepath="$PROJECT_DIR$/third_party/vecmath/vecmath.iml" />
     </modules>
   </component>
 </project>
