@@ -1335,4 +1335,8 @@ public class PeerConnectionClient {
             reportError("setSDP error: " + error);
         }
     }
+
+    public DataChannel getDataChannel() {
+        return dataChannel;
+    }
 }

@@ -29,5 +29,8 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile files('libs/autobanh.jar')
 
+    compile 'com.google.code.gson:gson:2.8.2'
+
     compile project(':libjinglepeerconnection')
+    compile project(':vecmath')
 }

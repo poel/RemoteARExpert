@@ -18,6 +18,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Rect;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
@@ -26,17 +27,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Toast;
-
-import java.io.IOException;
-import java.lang.RuntimeException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 import org.appspot.apprtc.AppRTCAudioManager.AudioDevice;
 import org.appspot.apprtc.AppRTCAudioManager.AudioManagerEvents;
@@ -44,9 +40,12 @@ import org.appspot.apprtc.AppRTCClient.RoomConnectionParameters;
 import org.appspot.apprtc.AppRTCClient.SignalingParameters;
 import org.appspot.apprtc.PeerConnectionClient.DataChannelParameters;
 import org.appspot.apprtc.PeerConnectionClient.PeerConnectionParameters;
+import org.appspot.apprtc.util.GsonUtil;
+import org.appspot.apprtc.util.LogUtils;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
 import org.webrtc.CameraEnumerator;
+import org.webrtc.DataChannel;
 import org.webrtc.EglBase;
 import org.webrtc.FileVideoCapturer;
 import org.webrtc.IceCandidate;
@@ -60,6 +59,12 @@ import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
 import org.webrtc.VideoFileRenderer;
 import org.webrtc.VideoRenderer;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Activity for peer connection call setup, call waiting
@@ -230,7 +235,7 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
             }
         });
 
-        fullscreenRenderer.setOnClickListener(listener);
+        //fullscreenRenderer.setOnClickListener(listener);
         remoteRenderers.add(remoteProxyRenderer);
 
         final Intent intent = getIntent();
@@ -380,6 +385,8 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
         } else {
             startCall();
         }
+
+        initTouch();
     }
 
     @TargetApi(17)
@@ -940,5 +947,55 @@ public class CallActivity extends Activity implements AppRTCClient.SignalingEven
     @Override
     public void onPeerConnectionError(final String description) {
         reportError(description);
+    }
+
+    enum Mode {
+        DRAW, PAIR_PARTNER_DISCOVERY, PAIR_ANCHOR_RESOLVING, PAIR_ERROR, PAIR_SUCCESS
+    }
+
+    private static final int TOUCH_QUEUE_SIZE = 30;
+
+    private ArrayList<TouchPoint> touchQueue;
+
+    private Mode mMode = Mode.DRAW;
+
+    private void initTouch() {
+        touchQueue = new ArrayList<>(TOUCH_QUEUE_SIZE);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent tap) {
+        int action = tap.getAction();
+
+        if (mMode == Mode.DRAW) {
+            if (action == MotionEvent.ACTION_DOWN) {
+                sendTouchPoint(new TouchPoint(tap.getX(), tap.getY(), true, false));
+
+                return true;
+            } else if (action == MotionEvent.ACTION_MOVE) {
+                sendTouchPoint(new TouchPoint(tap.getX(), tap.getY(), false, false));
+                return true;
+            } else if (action == MotionEvent.ACTION_UP
+                    || tap.getAction() == MotionEvent.ACTION_CANCEL) {
+
+                sendTouchPoint(new TouchPoint(tap.getX(), tap.getY(), false, true));
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void sendTouchPoint(TouchPoint touchPoint) {
+        if(peerConnectionClient != null && peerConnectionClient.getDataChannel() != null) {
+            String queueStr = GsonUtil.getInstance().toJson(touchPoint, TouchPoint.class);
+            DataChannel.Buffer buffer = new DataChannel.Buffer(ByteBuffer.wrap(queueStr.getBytes()), false);
+            peerConnectionClient.getDataChannel().send(buffer);
+
+            LogUtils.eTag(TAG, "touchQuee add point "
+                    , "X: " + touchPoint.getX()
+                    , " Y: " + touchPoint.getY());
+        }
     }
 }
